@@ -45,8 +45,17 @@ fn main() {
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        let _ = egui_state.on_event(&egui_ctx, &event);
-        
+
+        match &event {
+            Event::WindowEvent { event, .. } => {
+                let _ = egui_state.on_event(&egui_ctx, event);
+                if let WindowEvent::CloseRequested = event {
+                    *control_flow = ControlFlow::Exit;
+                }
+            },
+            _ => {}
+        }
+
         match event {
             Event::RedrawRequested(_) => {
                 let now = Instant::now();
@@ -62,7 +71,7 @@ fn main() {
                 });
                 egui_state.handle_platform_output(&window, &egui_ctx, full_output.platform_output);
                 
-                let frame = pixels.get_frame_mut();
+                let frame = pixels.frame_mut();
                 rendering::draw_frame(frame, &simulation, &background, &border, &ui_state);
                 
                 if pixels.render().is_err() {
@@ -70,7 +79,6 @@ fn main() {
                 }
             }
             Event::MainEventsCleared => window.request_redraw(),
-            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
             _ => {}
         }
     });

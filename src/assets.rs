@@ -10,7 +10,7 @@ pub struct ImageAsset {
 }
 
 pub fn load_background_image(path: &str) -> ImageAsset {
-    if let Some(img) = ImageReader::open(path).and_then(|r| Ok(r.decode())) {
+    if let Ok(img) = ImageReader::open(path).and_then(|r| r.decode()) {
         let img = img.to_rgba8();
         let (w, h) = img.dimensions();
         ImageAsset { width: w as usize, height: h as usize, data: img.into_raw() }
@@ -20,7 +20,7 @@ pub fn load_background_image(path: &str) -> ImageAsset {
 }
 
 pub fn load_border_image(path: &str) -> ImageAsset {
-    if let Some(img) = ImageReader::open(path).and_then(|r| r.decode()).ok() {
+    if let Ok(img) = ImageReader::open(path).and_then(|r| r.decode()) {
         let img = img.to_rgba8();
         let (w, h) = img.dimensions();
         ImageAsset { width: w as usize, height: h as usize, data: img.into_raw() }
