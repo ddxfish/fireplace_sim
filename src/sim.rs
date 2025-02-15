@@ -56,7 +56,7 @@ impl FireSim {
         let mut new_particles = Vec::new();
         
         for p in self.particles.iter_mut() {
-            // Add a random factor between 0.8 and 1.2 to lifetime reduction.
+            // Introduce a random factor between 0.8 and 1.2.
             let random_factor = 0.8 + rand::random::<f32>() * 0.4;
             match p.kind {
                 ParticleType::Fuel => {
@@ -71,16 +71,16 @@ impl FireSim {
                     p.lifetime -= dt_eff * 10.0 * random_factor;
                     let initial_life = params.oxygen;
                     p.size = (p.lifetime / initial_life) * initial_heat_size;
-                    // When heat particles shrink too small, they spawn smoke.
+                    // When heat particles shrink below threshold, spawn smoke with probability from Smoke Amount.
                     if p.size < 4.0 {
-                        if params.enable_smoke {
+                        if params.enable_smoke && (rand::random::<f32>() < params.smoke_amount / 100.0) {
                             new_particles.push(Particle {
                                 x: p.x,
                                 y: p.y,
                                 vx: (rand::random::<f32>() - 0.5) * 10.0,
                                 vy: -rand::random::<f32>() * 30.0 - 20.0,
                                 temp: 50.0,
-                                lifetime: 64.0, // Smoke lasts longer.
+                                lifetime: 64.0, // Extended lifespan for smoke.
                                 kind: ParticleType::Smoke,
                                 size: 4.0,
                             });
@@ -93,11 +93,11 @@ impl FireSim {
                     p.y += p.vy * dt_eff;
                     p.vx += params.wind * dt_eff;
                     p.temp -= params.simulation_speed * dt_eff;
-                    // Ember lifetime reduction increases rapidly once they leave the bottom 50 pixels.
+                    // Ember death: if near bottom (y > height - 50) use a minimal factor; otherwise increase rapidly.
                     let death_factor = if p.y > self.height - 50.0 {
-                        5.0
+                        1.0
                     } else {
-                        5.0 + 10.0 * (((self.height - p.y) / 50.0).powf(2.0))
+                        1.0 + 10.0 * (((self.height - p.y) / 50.0).powf(2.0))
                     };
                     p.lifetime -= dt_eff * death_factor * random_factor;
                 },
@@ -105,7 +105,7 @@ impl FireSim {
                     p.x += p.vx * dt_eff;
                     p.y += p.vy * dt_eff;
                     p.lifetime -= dt_eff * 10.0 * random_factor;
-                    // Smoke particles expand over time.
+                    // Smoke expands over time.
                     p.size += 2.0 * dt_eff;
                 },
             }
@@ -127,24 +127,11 @@ impl FireSim {
                 size: initial_heat_size,
             });
         }
-        if params.enable_smoke {
-            let smoke_spawn_count = ((params.smoke_amount / 100.0) * 3.0).max(1.0) as usize;
-            for _ in 0..smoke_spawn_count {
-                self.particles.push(Particle {
-                    x: rand::random::<f32>() * self.width,
-                    y: self.height - 20.0,
-                    vx: (rand::random::<f32>() - 0.5) * 10.0,
-                    vy: -rand::random::<f32>() * 30.0 - 20.0,
-                    temp: 50.0,
-                    lifetime: 64.0,
-                    kind: ParticleType::Smoke,
-                    size: 4.0,
-                });
-            }
-        }
+        
+        // Spawn embers using Ember Amount slider.
         if params.enable_sparks {
-            let base_ember_count = ((params.fuel_amount / 100.0) * (params.oxygen / 50.0)).max(1.0);
-            let ember_count = ((base_ember_count * (params.ember_amount / 100.0)) / 12.0).max(1.0) as usize;
+            let base_ember_count = (params.fuel_amount / 100.0) * (params.oxygen / 50.0);
+            let ember_count = (base_ember_count * (params.ember_amount / 100.0)).max(1.0) as usize;
             for _ in 0..ember_count {
                 self.particles.push(Particle {
                     x: rand::random::<f32>() * self.width,
