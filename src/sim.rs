@@ -56,7 +56,6 @@ impl FireSim {
         let mut new_particles = Vec::new();
         
         for p in self.particles.iter_mut() {
-            // Introduce a random factor between 0.8 and 1.2.
             let random_factor = 0.8 + rand::random::<f32>() * 0.4;
             match p.kind {
                 ParticleType::Fuel => {
@@ -71,7 +70,6 @@ impl FireSim {
                     p.lifetime -= dt_eff * 10.0 * random_factor;
                     let initial_life = params.oxygen;
                     p.size = (p.lifetime / initial_life) * initial_heat_size;
-                    // When heat particles shrink below threshold, spawn smoke with probability from Smoke Amount.
                     if p.size < 4.0 {
                         if params.enable_smoke && (rand::random::<f32>() < params.smoke_amount / 100.0) {
                             new_particles.push(Particle {
@@ -80,7 +78,7 @@ impl FireSim {
                                 vx: (rand::random::<f32>() - 0.5) * 10.0,
                                 vy: -rand::random::<f32>() * 30.0 - 20.0,
                                 temp: 50.0,
-                                lifetime: 64.0, // Extended lifespan for smoke.
+                                lifetime: 64.0,
                                 kind: ParticleType::Smoke,
                                 size: 4.0,
                             });
@@ -93,11 +91,12 @@ impl FireSim {
                     p.y += p.vy * dt_eff;
                     p.vx += params.wind * dt_eff;
                     p.temp -= params.simulation_speed * dt_eff;
-                    // Ember death: if near bottom (y > height - 50) use a minimal factor; otherwise increase rapidly.
-                    let death_factor = if p.y > self.height - 50.0 {
+                    // Ember must survive until at least 15% of the screen height.
+                    let threshold = 0.15 * self.height;
+                    let death_factor = if p.y > threshold {
                         1.0
                     } else {
-                        1.0 + 10.0 * (((self.height - p.y) / 50.0).powf(2.0))
+                        1.0 + 30.0 * (((threshold - p.y) / threshold).powf(2.0))
                     };
                     p.lifetime -= dt_eff * death_factor * random_factor;
                 },
@@ -105,8 +104,7 @@ impl FireSim {
                     p.x += p.vx * dt_eff;
                     p.y += p.vy * dt_eff;
                     p.lifetime -= dt_eff * 10.0 * random_factor;
-                    // Smoke expands over time.
-                    p.size += 2.0 * dt_eff;
+                    p.size += 2.0 * dt_eff; // Smoke grows over time.
                 },
             }
         }
@@ -128,10 +126,10 @@ impl FireSim {
             });
         }
         
-        // Spawn embers using Ember Amount slider.
+        // Spawn embers using Ember Amount slider (multiplied by 5).
         if params.enable_sparks {
             let base_ember_count = (params.fuel_amount / 100.0) * (params.oxygen / 50.0);
-            let ember_count = (base_ember_count * (params.ember_amount / 100.0)).max(1.0) as usize;
+            let ember_count = ((base_ember_count * (params.ember_amount / 100.0)) * 5.0).max(1.0) as usize;
             for _ in 0..ember_count {
                 self.particles.push(Particle {
                     x: rand::random::<f32>() * self.width,
@@ -144,14 +142,6 @@ impl FireSim {
                     size: 3.0,
                 });
             }
-        }
-    }
-    
-    pub fn average_temperature(&self) -> f32 {
-        if self.particles.is_empty() {
-            0.0
-        } else {
-            self.particles.iter().map(|p| p.temp).sum::<f32>() / self.particles.len() as f32
         }
     }
 }

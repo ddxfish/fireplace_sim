@@ -11,12 +11,12 @@ pub struct SimulationParams {
     pub enable_smoke: bool,
     pub ember_amount: f32,        // Ember Amount (0-100)
     pub smoke_amount: f32,        // Smoke Amount (0-100)
+    pub flicker: bool,            // Flicker effect
 }
 
 pub struct UIState {
     pub params: SimulationParams,
-    pub thermometer: f32,
-    pub grid_overlay: bool,
+    pub eight_bit_mode: bool, // true for 8-bit style, false for normal
 }
 
 impl UIState {
@@ -31,9 +31,9 @@ impl UIState {
                 enable_smoke: true,
                 ember_amount: 50.0,
                 smoke_amount: 50.0,
+                flicker: false,
             },
-            thermometer: 0.0,
-            grid_overlay: false,
+            eight_bit_mode: false,
         }
     }
     
@@ -52,7 +52,7 @@ impl UIState {
         ui.add(Slider::new(&mut self.params.smoke_amount, 0.0..=100.0));
         ui.checkbox(&mut self.params.enable_sparks, "Enable Sparks");
         ui.checkbox(&mut self.params.enable_smoke, "Enable Smoke");
-        ui.checkbox(&mut self.grid_overlay, "Grid Overlay (8-bit style)");
-        ui.label(format!("Temperature: {:.1}°C", self.thermometer));
+        ui.checkbox(&mut self.params.flicker, "Flicker Effect");
+        ui.checkbox(&mut self.eight_bit_mode, "8-bit Mode");
     }
 }

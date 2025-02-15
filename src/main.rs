@@ -15,8 +15,8 @@ struct FireSimApp {
     background: assets::ImageAsset,
     border: assets::ImageAsset,
     config: config::AppConfig,
-    sim_area: egui::Vec2, // Current simulation drawing area.
-    is_fullscreen: bool,  // Fullscreen state.
+    sim_area: egui::Vec2,
+    is_fullscreen: bool,
 }
 
 impl Default for FireSimApp {
@@ -39,40 +39,28 @@ impl Default for FireSimApp {
 
 impl App for FireSimApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut Frame) {
-        // Toggle fullscreen with Alt+Enter.
-        if ctx.input(|i| i.key_pressed(egui::Key::Enter))
-            && ctx.input(|i| i.modifiers.alt)
-        {
+        if ctx.input(|i| i.key_pressed(egui::Key::Enter)) && ctx.input(|i| i.modifiers.alt) {
             self.is_fullscreen = !self.is_fullscreen;
             frame.set_fullscreen(self.is_fullscreen);
         }
-
-        // Show control UI.
+        
         egui::Window::new("Fire Controls").show(ctx, |ui| {
             self.ui_state.build_ui(ui);
         });
-
-        // Use the full screen rect from egui input to detect size changes.
-        let new_size = ctx.input(|i| i.screen_rect().size());
-        if new_size != self.sim_area {
-            // Reinitialize simulation with new dimensions.
-            self.simulation = sim::FireSim::with_size(new_size.x, new_size.y);
-            self.sim_area = new_size;
-        }
-
-        // Use a fixed dt.
-        let dt = 1.0 / 60.0;
-        self.simulation.update(dt, &self.ui_state.params);
-        self.ui_state.thermometer = self.simulation.average_temperature();
-
-        // Draw simulation.
+        
         egui::CentralPanel::default().show(ctx, |ui| {
             let available_size = ui.available_size();
+            if available_size != self.sim_area {
+                self.simulation = sim::FireSim::with_size(available_size.x, available_size.y);
+                self.sim_area = available_size;
+            }
+            let dt = 1.0 / 60.0;
+            self.simulation.update(dt, &self.ui_state.params);
             let (_response, painter) = ui.allocate_painter(available_size, egui::Sense::hover());
             let rect = ui.max_rect();
             rendering::draw_simulation(&painter, rect, &self.simulation, &self.background, &self.border, &self.ui_state);
         });
-
+        
         ctx.request_repaint();
     }
 }
@@ -80,10 +68,7 @@ impl App for FireSimApp {
 fn main() {
     let app = FireSimApp::default();
     let native_options = NativeOptions {
-        initial_window_size: Some(Vec2::new(
-            constants::WINDOW_WIDTH as f32,
-            constants::WINDOW_HEIGHT as f32,
-        )),
+        initial_window_size: Some(Vec2::new(constants::WINDOW_WIDTH as f32, constants::WINDOW_HEIGHT as f32)),
         resizable: true,
         ..Default::default()
     };
