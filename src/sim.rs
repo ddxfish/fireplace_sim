@@ -18,7 +18,7 @@ pub struct Particle {
     pub temp: f32,
     pub lifetime: f32,
     pub kind: ParticleType,
-    pub size: f32, // Visual size of the particle.
+    pub size: f32, // Visual size
 }
 
 pub struct FireSim {
@@ -28,7 +28,7 @@ pub struct FireSim {
 }
 
 impl FireSim {
-    // Create simulation with given dimensions.
+    // Create simulation using given dimensions.
     pub fn with_size(width: f32, height: f32) -> Self {
         let mut particles = Vec::new();
         // Spawn fuel particles along the bottom.
@@ -52,13 +52,15 @@ impl FireSim {
     }
     
     pub fn update(&mut self, dt: f32, params: &SimulationParams) {
-        // Effective dt scaled by simulation speed.
+        // Scale dt by simulation speed.
         let dt_eff = dt * params.simulation_speed;
+        let initial_heat_size = 18.0; // Constant: heat particles start at 18.0 (≈3x base)
         let mut new_particles = Vec::new();
+        
         for p in self.particles.iter_mut() {
             match p.kind {
                 ParticleType::Fuel => {
-                    // Fuel remains at the bottom.
+                    // Fuel remains fixed at the bottom.
                     p.y = self.height - 10.0;
                     p.lifetime -= dt_eff * 10.0;
                 },
@@ -68,9 +70,10 @@ impl FireSim {
                     p.vx += params.wind * dt_eff;
                     p.temp -= params.simulation_speed * dt_eff;
                     p.lifetime -= dt_eff * 10.0;
-                    let initial_life = params.oxygen;
-                    p.size = (p.lifetime / initial_life) * params.spark_intensity;
+                    // Shrink linearly: size decays from initial_heat_size to 0 over its lifespan.
+                    p.size = (p.lifetime / params.oxygen) * initial_heat_size;
                     if p.size < 4.0 {
+                        // When too small, spawn smoke if enabled.
                         if params.enable_smoke {
                             new_particles.push(Particle {
                                 x: p.x,
@@ -102,7 +105,8 @@ impl FireSim {
         }
         self.particles.retain(|p| p.lifetime > 0.0);
         self.particles.append(&mut new_particles);
-        // Spawn new particles based on Particle Count.
+        
+        // Spawn new heat particles based on Particle Count.
         let spawn_count = (params.fuel_amount / 10.0).max(1.0) as usize;
         for _ in 0..spawn_count {
             self.particles.push(Particle {
@@ -113,9 +117,11 @@ impl FireSim {
                 temp: 100.0 * params.simulation_speed,
                 lifetime: params.oxygen,
                 kind: ParticleType::Heat,
-                size: params.spark_intensity,
+                size: initial_heat_size,
             });
         }
+        
+        // Spawn direct smoke.
         if params.enable_smoke {
             for _ in 0..1 {
                 self.particles.push(Particle {
@@ -130,17 +136,19 @@ impl FireSim {
                 });
             }
         }
+        // Spawn embers: number tied to fuel count and lifespan.
         if params.enable_sparks {
-            for _ in 0..2 {
+            let ember_count = (((params.fuel_amount / 100.0) * (params.oxygen / 50.0)).max(1.0)) as usize;
+            for _ in 0..ember_count {
                 self.particles.push(Particle {
                     x: rand::random::<f32>() * self.width,
                     y: self.height - 15.0,
                     vx: (rand::random::<f32>() - 0.5) * 30.0,
                     vy: -rand::random::<f32>() * 70.0 - 40.0,
                     temp: 120.0,
-                    lifetime: 10.0, // Extended ember lifetime.
+                    lifetime: params.oxygen / 2.0 + 5.0,
                     kind: ParticleType::Ember,
-                    size: (params.spark_intensity * 0.5).max(2.0),
+                    size: 3.0,
                 });
             }
         }

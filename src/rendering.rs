@@ -6,23 +6,30 @@ use crate::constants;
 use egui::{Painter, Rect, Color32, Pos2};
 
 pub fn draw_simulation(painter: &Painter, rect: Rect, sim: &FireSim, _background: &ImageAsset, _border: &ImageAsset, ui: &UIState) {
-    // Fill the background.
+    // Fill background.
     painter.rect_filled(rect, 0.0, Color32::BLACK);
-
-    // Draw particles as squares.
+    
+    // Draw each particle.
     for p in &sim.particles {
         let pos = Pos2::new(p.x, p.y);
-        let size = constants::PARTICLE_SIZE as f32;
+        let size = p.size;
         let color = match p.kind {
             ParticleType::Fuel => Color32::from_rgb(100, 50, 0),
-            ParticleType::Heat => Color32::from_rgb(255, 100, 0),
+            ParticleType::Heat => {
+                // Use particle size (relative to initial size 18.0) to interpolate color.
+                let ratio = (p.size / 18.0).clamp(0.0, 1.0);
+                // Bright orange: (255,165,0), Dark orange: (200,70,0)
+                let r = 200 + (55.0 * ratio) as u8;
+                let g = 70 + (95.0 * ratio) as u8;
+                Color32::from_rgb(r, g, 0)
+            },
             ParticleType::Smoke => Color32::from_rgba_unmultiplied(100, 100, 100, 150),
             ParticleType::Ember => Color32::from_rgb(255, 200, 50),
         };
         painter.rect_filled(egui::Rect::from_min_size(pos, egui::vec2(size, size)), 0.0, color);
     }
-
-    // Draw grid overlay if enabled.
+    
+    // Optionally draw grid overlay.
     if ui.grid_overlay {
         let grid_size = 20.0;
         let mut x = rect.min.x;
@@ -36,7 +43,7 @@ pub fn draw_simulation(painter: &Painter, rect: Rect, sim: &FireSim, _background
             y += grid_size;
         }
     }
-
+    
     // Draw border overlay.
     painter.rect_stroke(rect, 0.0, (2.0, Color32::WHITE));
 }

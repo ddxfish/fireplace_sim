@@ -7,7 +7,6 @@ pub struct SimulationParams {
     pub oxygen: f32,              // Particle Lifespan
     pub wind: f32,
     pub simulation_speed: f32,    // Simulation Speed
-    pub spark_intensity: f32,     // Initial Particle Size
     pub enable_sparks: bool,
     pub enable_smoke: bool,
 }
@@ -22,11 +21,10 @@ impl UIState {
     pub fn new() -> Self {
         Self {
             params: SimulationParams {
-                fuel_amount: 50.0,         // Default Particle Count
-                oxygen: 10.0,              // Default Particle Lifespan
-                wind: 0.0,
-                simulation_speed: 1.0,     // Default Simulation Speed
-                spark_intensity: 12.0,     // Default Initial Particle Size
+                fuel_amount: 50.0,       // Particle Count (0–1000)
+                oxygen: 10.0,            // Particle Lifespan (50–300)
+                wind: 0.0,               // Wind (-100 to 100)
+                simulation_speed: 1.0,   // Simulation Speed (0–50)
                 enable_sparks: true,
                 enable_smoke: true,
             },
@@ -43,9 +41,7 @@ impl UIState {
         ui.label("Wind");
         ui.add(Slider::new(&mut self.params.wind, -100.0..=100.0));
         ui.label("Simulation Speed");
-        ui.add(Slider::new(&mut self.params.simulation_speed, 5.0..=50.0));
-        ui.label("Initial Particle Size");
-        ui.add(Slider::new(&mut self.params.spark_intensity, 50.0..=200.0));
+        ui.add(Slider::new(&mut self.params.simulation_speed, 0.0..=50.0));
         ui.checkbox(&mut self.params.enable_sparks, "Enable Sparks");
         ui.checkbox(&mut self.params.enable_smoke, "Enable Smoke");
         ui.checkbox(&mut self.grid_overlay, "Grid Overlay");
