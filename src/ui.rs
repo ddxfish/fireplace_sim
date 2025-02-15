@@ -24,7 +24,7 @@ impl UIState {
                 fuel_amount: 50.0,       // Particle Count (0–1000)
                 oxygen: 10.0,            // Particle Lifespan (50–300)
                 wind: 0.0,               // Wind (-100 to 100)
-                simulation_speed: 1.0,   // Simulation Speed (0–50)
+                simulation_speed: 1.0,   // Simulation Speed (0–15)
                 enable_sparks: true,
                 enable_smoke: true,
             },
@@ -41,7 +41,7 @@ impl UIState {
         ui.label("Wind");
         ui.add(Slider::new(&mut self.params.wind, -100.0..=100.0));
         ui.label("Simulation Speed");
-        ui.add(Slider::new(&mut self.params.simulation_speed, 0.0..=50.0));
+        ui.add(Slider::new(&mut self.params.simulation_speed, 0.0..=15.0));
         ui.checkbox(&mut self.params.enable_sparks, "Enable Sparks");
         ui.checkbox(&mut self.params.enable_smoke, "Enable Smoke");
         ui.checkbox(&mut self.grid_overlay, "Grid Overlay");
