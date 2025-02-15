@@ -15,13 +15,14 @@ pub fn draw_simulation(painter: &Painter, rect: Rect, sim: &FireSim, _background
             ParticleType::Fuel => Color32::from_rgb(100, 50, 0),
             ParticleType::Heat => {
                 let ratio = (p.size / 18.0).clamp(0.0, 1.0);
+                // Interpolate from dark orange (200,70,0) to bright orange (255,165,0).
                 let r = 200 + (55.0 * ratio) as u8;
                 let g = 70 + (95.0 * ratio) as u8;
                 Color32::from_rgb(r, g, 0)
             },
             ParticleType::Smoke => {
-                let ratio = (4.0 / p.size).clamp(0.0, 1.0);
-                let alpha = (150.0 * ratio).min(150.0).max(30.0) as u8;
+                // As smoke grows, it becomes more transparent.
+                let alpha = (150.0 - (p.size - 4.0) * 10.0).clamp(30.0, 150.0) as u8;
                 Color32::from_rgba_unmultiplied(100, 100, 100, alpha)
             },
             ParticleType::Ember => Color32::from_rgb(255, 200, 50),

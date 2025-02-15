@@ -28,7 +28,6 @@ pub struct FireSim {
 }
 
 impl FireSim {
-    // Creates a simulation with given dimensions.
     pub fn with_size(width: f32, height: f32) -> Self {
         let mut particles = Vec::new();
         // Spawn fuel particles along the bottom.
@@ -53,11 +52,11 @@ impl FireSim {
     
     pub fn update(&mut self, dt: f32, params: &SimulationParams) {
         let dt_eff = dt * params.simulation_speed;
-        let initial_heat_size = 18.0; // Heat particles start at 18.0.
+        let initial_heat_size = 18.0;
         let mut new_particles = Vec::new();
         
         for p in self.particles.iter_mut() {
-            // Random factor in [0.8,1.2] for lifetime decrement.
+            // Add a random factor between 0.8 and 1.2 to lifetime reduction.
             let random_factor = 0.8 + rand::random::<f32>() * 0.4;
             match p.kind {
                 ParticleType::Fuel => {
@@ -72,6 +71,7 @@ impl FireSim {
                     p.lifetime -= dt_eff * 10.0 * random_factor;
                     let initial_life = params.oxygen;
                     p.size = (p.lifetime / initial_life) * initial_heat_size;
+                    // When heat particles shrink too small, they spawn smoke.
                     if p.size < 4.0 {
                         if params.enable_smoke {
                             new_particles.push(Particle {
@@ -80,7 +80,7 @@ impl FireSim {
                                 vx: (rand::random::<f32>() - 0.5) * 10.0,
                                 vy: -rand::random::<f32>() * 30.0 - 20.0,
                                 temp: 50.0,
-                                lifetime: 64.0, // Smoke lasts 8× longer.
+                                lifetime: 64.0, // Smoke lasts longer.
                                 kind: ParticleType::Smoke,
                                 size: 4.0,
                             });
@@ -93,12 +93,11 @@ impl FireSim {
                     p.y += p.vy * dt_eff;
                     p.vx += params.wind * dt_eff;
                     p.temp -= params.simulation_speed * dt_eff;
-                    // Ember lifetime reduction depends on vertical position:
-                    // Near bottom (y > height - 50) reduce slower; at top, faster.
+                    // Ember lifetime reduction increases rapidly once they leave the bottom 50 pixels.
                     let death_factor = if p.y > self.height - 50.0 {
                         5.0
                     } else {
-                        5.0 + 10.0 * (1.0 - p.y / self.height)
+                        5.0 + 10.0 * (((self.height - p.y) / 50.0).powf(2.0))
                     };
                     p.lifetime -= dt_eff * death_factor * random_factor;
                 },
@@ -106,6 +105,8 @@ impl FireSim {
                     p.x += p.vx * dt_eff;
                     p.y += p.vy * dt_eff;
                     p.lifetime -= dt_eff * 10.0 * random_factor;
+                    // Smoke particles expand over time.
+                    p.size += 2.0 * dt_eff;
                 },
             }
         }
@@ -127,7 +128,8 @@ impl FireSim {
             });
         }
         if params.enable_smoke {
-            for _ in 0..1 {
+            let smoke_spawn_count = ((params.smoke_amount / 100.0) * 3.0).max(1.0) as usize;
+            for _ in 0..smoke_spawn_count {
                 self.particles.push(Particle {
                     x: rand::random::<f32>() * self.width,
                     y: self.height - 20.0,
@@ -141,8 +143,8 @@ impl FireSim {
             }
         }
         if params.enable_sparks {
-            // Ember count now reduced by factor 8.
-            let ember_count = (((params.fuel_amount / 100.0) * (params.oxygen / 50.0)).max(1.0) / 8.0).max(1.0) as usize;
+            let base_ember_count = ((params.fuel_amount / 100.0) * (params.oxygen / 50.0)).max(1.0);
+            let ember_count = ((base_ember_count * (params.ember_amount / 100.0)) / 12.0).max(1.0) as usize;
             for _ in 0..ember_count {
                 self.particles.push(Particle {
                     x: rand::random::<f32>() * self.width,
