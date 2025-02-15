@@ -1,6 +1,5 @@
 // config.rs
 use std::fs;
-use std::path::Path;
 
 pub struct AppConfig {
     pub background_path: String,
@@ -20,7 +19,10 @@ pub fn load_config() -> AppConfig {
         }
         AppConfig { background_path, border_path }
     } else {
-        AppConfig { background_path: "background.png".to_string(), border_path: "border.png".to_string() }
+        AppConfig {
+            background_path: "background.png".to_string(),
+            border_path: "border.png".to_string(),
+        }
     }
 }
 

@@ -15,7 +15,7 @@ pub fn load_background_image(path: &str) -> ImageAsset {
         let (w, h) = img.dimensions();
         ImageAsset { width: w as usize, height: h as usize, data: img.into_raw() }
     } else {
-        ImageAsset { width: constants::WINDOW_WIDTH as usize, height: constants::WINDOW_HEIGHT as usize, data: Vec::new() }
+        ImageAsset { width: constants::WINDOW_WIDTH as usize, height: constants::WINDOW_HEIGHT as usize, data: vec![] }
     }
 }
 
@@ -25,6 +25,6 @@ pub fn load_border_image(path: &str) -> ImageAsset {
         let (w, h) = img.dimensions();
         ImageAsset { width: w as usize, height: h as usize, data: img.into_raw() }
     } else {
-        ImageAsset { width: constants::WINDOW_WIDTH as usize, height: constants::WINDOW_HEIGHT as usize, data: Vec::new() }
+        ImageAsset { width: constants::WINDOW_WIDTH as usize, height: constants::WINDOW_HEIGHT as usize, data: vec![] }
     }
 }

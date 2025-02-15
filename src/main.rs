@@ -6,116 +6,64 @@ mod config;
 mod assets;
 mod constants;
 
-use std::time::Instant;
-use winit::{
-    dpi::LogicalSize,
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, WindowBuilder},
-};
-use pixels::{Pixels, SurfaceTexture};
-use egui::{Context, FontDefinitions};
-use egui_winit::State as EguiWinitState;
+use eframe::{egui, NativeOptions, run_native, App, Frame};
+use egui::Vec2;
+
+struct FireSimApp {
+    simulation: sim::FireSim,
+    ui_state: ui::UIState,
+    background: assets::ImageAsset,
+    border: assets::ImageAsset,
+    config: config::AppConfig,
+}
+
+impl Default for FireSimApp {
+    fn default() -> Self {
+        let config = config::load_config();
+        let background = assets::load_background_image(&config.background_path);
+        let border = assets::load_border_image(&config.border_path);
+        Self {
+            simulation: sim::FireSim::new(),
+            ui_state: ui::UIState::new(),
+            background,
+            border,
+            config,
+        }
+    }
+}
+
+impl App for FireSimApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
+        // Show control window with sliders/checkboxes.
+        egui::Window::new("Fire Controls").show(ctx, |ui| {
+            self.ui_state.build_ui(ui);
+        });
+
+        // Use a fixed dt (1/60 sec) for simplicity.
+        let dt = 1.0 / 60.0;
+
+        // Update simulation.
+        self.simulation.update(dt, &self.ui_state.params);
+        self.ui_state.thermometer = self.simulation.average_temperature();
+
+        // Draw simulation in the central panel.
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let available_size = ui.available_size();
+            let (_response, painter) = ui.allocate_painter(available_size, egui::Sense::hover());
+            let rect = ui.max_rect();
+            rendering::draw_simulation(&painter, rect, &self.simulation, &self.background, &self.border, &self.ui_state);
+        });
+
+        ctx.request_repaint();
+    }
+}
 
 fn main() {
-    // Create window and event loop.
-    let event_loop = EventLoop::new();
-    let window = WindowBuilder::new()
-        .with_title("Fire Simulation")
-        .with_inner_size(LogicalSize::new(constants::WINDOW_WIDTH, constants::WINDOW_HEIGHT))
-        .build(&event_loop)
-        .unwrap();
-
-    // Create Pixels.
-    let mut pixels = {
-        let size = window.inner_size();
-        let surface_texture = SurfaceTexture::new(size.width, size.height, &window);
-        Pixels::new(constants::WINDOW_WIDTH, constants::WINDOW_HEIGHT, surface_texture).unwrap()
+    let app = FireSimApp::default();
+    let native_options = NativeOptions {
+        initial_window_size: Some(Vec2::new(constants::WINDOW_WIDTH as f32, constants::WINDOW_HEIGHT as f32)),
+        resizable: true,
+        ..Default::default()
     };
-
-    // Load configuration and assets.
-    let config = config::load_config();
-    let background = assets::load_background_image(&config.background_path);
-    let border = assets::load_border_image(&config.border_path);
-
-    // Initialize simulation and UI state.
-    let mut simulation = sim::FireSim::new();
-    let mut ui_state = ui::UIState::new();
-
-    // Set up egui (for input processing only; UI overlay not rendered).
-    let mut egui_state = EguiWinitState::new(&window);
-    let mut egui_ctx = Context::default();
-    egui_ctx.set_fonts(FontDefinitions::default());
-
-    let mut last_frame = Instant::now();
-
-    event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Poll;
-
-        // Handle window events.
-        match &event {
-            Event::WindowEvent { event, .. } => {
-                // Process egui events (input state update).
-                let _ = egui_state.on_event(&egui_ctx, event);
-
-                match event {
-                    WindowEvent::Resized(new_size) => {
-                        pixels.resize_surface(new_size.width, new_size.height);
-                    }
-                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        pixels.resize_surface(new_inner_size.width, new_inner_size.height);
-                    }
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        if let KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Return),
-                            ..
-                        } = input
-                        {
-                            if input.modifiers.alt() {
-                                if window.fullscreen().is_some() {
-                                    window.set_fullscreen(None);
-                                } else {
-                                    window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                                }
-                            }
-                        }
-                    }
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
-
-        // Update and render.
-        match event {
-            Event::RedrawRequested(_) => {
-                let now = Instant::now();
-                let dt = now.duration_since(last_frame).as_secs_f32();
-                last_frame = now;
-
-                // Run egui frame to update UI state (UI not drawn).
-                let raw_input = egui_state.take_egui_input(&window);
-                let _ = egui_ctx.run(raw_input, |ctx| {
-                    ui_state.build_ui(ctx);
-                });
-                // (The egui UI is not rendered to the screen in this version.)
-
-                // Update simulation based on (possibly changed) UI parameters.
-                simulation.update(dt, &ui_state.params);
-                ui_state.thermometer = simulation.average_temperature();
-
-                // Render simulation.
-                let frame = pixels.frame_mut();
-                rendering::draw_frame(frame, &simulation, &background, &border, &ui_state);
-
-                if pixels.render().is_err() {
-                    *control_flow = ControlFlow::Exit;
-                }
-            }
-            Event::MainEventsCleared => window.request_redraw(),
-            _ => {}
-        }
-    });
+    run_native("Fire Simulation", native_options, Box::new(|_cc| Box::new(app)));
 }

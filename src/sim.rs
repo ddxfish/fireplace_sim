@@ -29,12 +29,13 @@ impl FireSim {
         let mut particles = Vec::new();
         for i in 0..constants::INITIAL_FUEL_PARTICLES {
             particles.push(Particle {
-                x: (i as f32 / constants::INITIAL_FUEL_PARTICLES as f32) * constants::WINDOW_WIDTH as f32,
+                x: (i as f32 / constants::INITIAL_FUEL_PARTICLES as f32)
+                    * constants::WINDOW_WIDTH as f32,
                 y: constants::WINDOW_HEIGHT as f32 - 10.0,
                 vx: 0.0,
                 vy: 0.0,
                 temp: 20.0,
-                lifetime: 100.0,
+                lifetime: 300.0, // Increased lifetime.
                 kind: ParticleType::Fuel,
             });
         }
@@ -58,40 +59,51 @@ impl FireSim {
     }
     
     pub fn spawn_particles(&mut self, params: &SimulationParams) {
-        self.particles.push(Particle {
-            x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
-            y: constants::WINDOW_HEIGHT as f32 - 15.0,
-            vx: (rand::random::<f32>() - 0.5) * 20.0,
-            vy: -rand::random::<f32>() * 50.0 - 30.0,
-            temp: 100.0,
-            lifetime: 2.0,
-            kind: ParticleType::Heat,
-        });
-        if params.enable_smoke {
-            self.particles.push(Particle {
-                x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
-                y: constants::WINDOW_HEIGHT as f32 - 20.0,
-                vx: (rand::random::<f32>() - 0.5) * 10.0,
-                vy: -rand::random::<f32>() * 30.0 - 20.0,
-                temp: 50.0,
-                lifetime: 3.0,
-                kind: ParticleType::Smoke,
-            });
-        }
-        if params.enable_sparks {
+        // Spawn a couple of heat particles.
+        for _ in 0..2 {
             self.particles.push(Particle {
                 x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
                 y: constants::WINDOW_HEIGHT as f32 - 15.0,
-                vx: (rand::random::<f32>() - 0.5) * 30.0,
-                vy: -rand::random::<f32>() * 70.0 - 40.0,
-                temp: 120.0,
-                lifetime: 1.5,
-                kind: ParticleType::Ember,
+                vx: (rand::random::<f32>() - 0.5) * 20.0,
+                vy: -rand::random::<f32>() * 50.0 - 30.0,
+                temp: 100.0,
+                lifetime: 6.0,
+                kind: ParticleType::Heat,
             });
+        }
+        if params.enable_smoke {
+            for _ in 0..2 {
+                self.particles.push(Particle {
+                    x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
+                    y: constants::WINDOW_HEIGHT as f32 - 20.0,
+                    vx: (rand::random::<f32>() - 0.5) * 10.0,
+                    vy: -rand::random::<f32>() * 30.0 - 20.0,
+                    temp: 50.0,
+                    lifetime: 8.0,
+                    kind: ParticleType::Smoke,
+                });
+            }
+        }
+        if params.enable_sparks {
+            for _ in 0..2 {
+                self.particles.push(Particle {
+                    x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
+                    y: constants::WINDOW_HEIGHT as f32 - 15.0,
+                    vx: (rand::random::<f32>() - 0.5) * 30.0,
+                    vy: -rand::random::<f32>() * 70.0 - 40.0,
+                    temp: 120.0,
+                    lifetime: 4.0,
+                    kind: ParticleType::Ember,
+                });
+            }
         }
     }
     
     pub fn average_temperature(&self) -> f32 {
-        if self.particles.is_empty() { 0.0 } else { self.particles.iter().map(|p| p.temp).sum::<f32>() / self.particles.len() as f32 }
+        if self.particles.is_empty() {
+            0.0
+        } else {
+            self.particles.iter().map(|p| p.temp).sum::<f32>() / self.particles.len() as f32
+        }
     }
 }

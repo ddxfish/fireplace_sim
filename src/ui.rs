@@ -1,5 +1,5 @@
 // ui.rs
-use egui::{Context, Slider, Checkbox, Window};
+use egui::{Slider, Checkbox, Ui};
 
 #[derive(Clone)]
 pub struct SimulationParams {
@@ -20,7 +20,7 @@ pub struct UIState {
 
 impl UIState {
     pub fn new() -> Self {
-        UIState {
+        Self {
             params: SimulationParams {
                 fuel_amount: 50.0,
                 oxygen: 21.0,
@@ -35,22 +35,20 @@ impl UIState {
         }
     }
     
-    pub fn build_ui(&mut self, ctx: &Context) {
-        Window::new("Fire Controls").show(ctx, |ui| {
-            ui.label("Fuel Amount");
-            ui.add(Slider::new(&mut self.params.fuel_amount, 0.0..=100.0));
-            ui.label("Oxygen Level");
-            ui.add(Slider::new(&mut self.params.oxygen, 0.0..=30.0));
-            ui.label("Wind");
-            ui.add(Slider::new(&mut self.params.wind, -50.0..=50.0));
-            ui.label("Cooling Rate");
-            ui.add(Slider::new(&mut self.params.cooling_rate, 0.0..=20.0));
-            ui.label("Spark Intensity");
-            ui.add(Slider::new(&mut self.params.spark_intensity, 0.0..=5.0));
-            ui.checkbox(&mut self.params.enable_sparks, "Enable Sparks");
-            ui.checkbox(&mut self.params.enable_smoke, "Enable Smoke");
-            ui.checkbox(&mut self.grid_overlay, "Grid Overlay");
-            ui.label(format!("Temperature: {:.1}°C", self.thermometer));
-        });
+    pub fn build_ui(&mut self, ui: &mut Ui) {
+        ui.label("Fuel Amount");
+        ui.add(Slider::new(&mut self.params.fuel_amount, 0.0..=100.0));
+        ui.label("Oxygen Level");
+        ui.add(Slider::new(&mut self.params.oxygen, 0.0..=30.0));
+        ui.label("Wind");
+        ui.add(Slider::new(&mut self.params.wind, -50.0..=50.0));
+        ui.label("Cooling Rate");
+        ui.add(Slider::new(&mut self.params.cooling_rate, 0.0..=20.0));
+        ui.label("Spark Intensity");
+        ui.add(Slider::new(&mut self.params.spark_intensity, 0.0..=5.0));
+        ui.checkbox(&mut self.params.enable_sparks, "Enable Sparks");
+        ui.checkbox(&mut self.params.enable_smoke, "Enable Smoke");
+        ui.checkbox(&mut self.grid_overlay, "Grid Overlay");
+        ui.label(format!("Temperature: {:.1}°C", self.thermometer));
     }
 }
