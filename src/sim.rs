@@ -22,17 +22,14 @@ pub struct Particle {
 
 pub struct FireSim {
     pub particles: Vec<Particle>,
+    pub width: f32,
+    pub height: f32,
 }
 
 impl FireSim {
-    pub fn new() -> Self {
-        // Default uses the constant window dimensions.
-        Self::with_size(constants::WINDOW_WIDTH as f32, constants::WINDOW_HEIGHT as f32)
-    }
-    
-    // New constructor that uses given dimensions.
     pub fn with_size(width: f32, height: f32) -> Self {
         let mut particles = Vec::new();
+        // Create fuel particles along the bottom.
         for i in 0..constants::INITIAL_FUEL_PARTICLES {
             particles.push(Particle {
                 x: (i as f32 / constants::INITIAL_FUEL_PARTICLES as f32) * width,
@@ -40,22 +37,35 @@ impl FireSim {
                 vx: 0.0,
                 vy: 0.0,
                 temp: 20.0,
-                lifetime: 300.0, // Increased lifetime.
+                lifetime: 300.0,
                 kind: ParticleType::Fuel,
             });
         }
-        FireSim { particles }
+        FireSim { particles, width, height }
+    }
+    
+    pub fn new() -> Self {
+        Self::with_size(constants::WINDOW_WIDTH as f32, constants::WINDOW_HEIGHT as f32)
     }
     
     pub fn update(&mut self, dt: f32, params: &SimulationParams) {
         for p in self.particles.iter_mut() {
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            p.vx += params.wind * dt;
-            if let ParticleType::Heat | ParticleType::Ember = p.kind {
-                p.temp -= params.cooling_rate * dt;
+            match p.kind {
+                ParticleType::Fuel => {
+                    // Keep fuel particles fixed at the bottom.
+                    p.y = self.height - 10.0;
+                    p.lifetime -= dt * 10.0;
+                }
+                _ => {
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.vx += params.wind * dt;
+                    if let ParticleType::Heat | ParticleType::Ember = p.kind {
+                        p.temp -= params.cooling_rate * dt;
+                    }
+                    p.lifetime -= dt * 10.0;
+                }
             }
-            p.lifetime -= dt * 10.0;
         }
         self.particles.retain(|p| p.lifetime > 0.0);
         if params.fuel_amount > 0.0 {
@@ -67,8 +77,8 @@ impl FireSim {
         // Spawn two heat particles.
         for _ in 0..2 {
             self.particles.push(Particle {
-                x: rand::random::<f32>() * 800.0, // these values will be overridden on resize
-                y: 590.0,
+                x: rand::random::<f32>() * self.width,
+                y: self.height - 15.0,
                 vx: (rand::random::<f32>() - 0.5) * 20.0,
                 vy: -rand::random::<f32>() * 50.0 - 30.0,
                 temp: 100.0,
@@ -79,8 +89,8 @@ impl FireSim {
         if params.enable_smoke {
             for _ in 0..2 {
                 self.particles.push(Particle {
-                    x: rand::random::<f32>() * 800.0,
-                    y: 580.0,
+                    x: rand::random::<f32>() * self.width,
+                    y: self.height - 20.0,
                     vx: (rand::random::<f32>() - 0.5) * 10.0,
                     vy: -rand::random::<f32>() * 30.0 - 20.0,
                     temp: 50.0,
@@ -92,8 +102,8 @@ impl FireSim {
         if params.enable_sparks {
             for _ in 0..2 {
                 self.particles.push(Particle {
-                    x: rand::random::<f32>() * 800.0,
-                    y: 590.0,
+                    x: rand::random::<f32>() * self.width,
+                    y: self.height - 15.0,
                     vx: (rand::random::<f32>() - 0.5) * 30.0,
                     vy: -rand::random::<f32>() * 70.0 - 40.0,
                     temp: 120.0,
