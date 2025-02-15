@@ -26,12 +26,17 @@ pub struct FireSim {
 
 impl FireSim {
     pub fn new() -> Self {
+        // Default uses the constant window dimensions.
+        Self::with_size(constants::WINDOW_WIDTH as f32, constants::WINDOW_HEIGHT as f32)
+    }
+    
+    // New constructor that uses given dimensions.
+    pub fn with_size(width: f32, height: f32) -> Self {
         let mut particles = Vec::new();
         for i in 0..constants::INITIAL_FUEL_PARTICLES {
             particles.push(Particle {
-                x: (i as f32 / constants::INITIAL_FUEL_PARTICLES as f32)
-                    * constants::WINDOW_WIDTH as f32,
-                y: constants::WINDOW_HEIGHT as f32 - 10.0,
+                x: (i as f32 / constants::INITIAL_FUEL_PARTICLES as f32) * width,
+                y: height - 10.0,
                 vx: 0.0,
                 vy: 0.0,
                 temp: 20.0,
@@ -59,11 +64,11 @@ impl FireSim {
     }
     
     pub fn spawn_particles(&mut self, params: &SimulationParams) {
-        // Spawn a couple of heat particles.
+        // Spawn two heat particles.
         for _ in 0..2 {
             self.particles.push(Particle {
-                x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
-                y: constants::WINDOW_HEIGHT as f32 - 15.0,
+                x: rand::random::<f32>() * 800.0, // these values will be overridden on resize
+                y: 590.0,
                 vx: (rand::random::<f32>() - 0.5) * 20.0,
                 vy: -rand::random::<f32>() * 50.0 - 30.0,
                 temp: 100.0,
@@ -74,8 +79,8 @@ impl FireSim {
         if params.enable_smoke {
             for _ in 0..2 {
                 self.particles.push(Particle {
-                    x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
-                    y: constants::WINDOW_HEIGHT as f32 - 20.0,
+                    x: rand::random::<f32>() * 800.0,
+                    y: 580.0,
                     vx: (rand::random::<f32>() - 0.5) * 10.0,
                     vy: -rand::random::<f32>() * 30.0 - 20.0,
                     temp: 50.0,
@@ -87,8 +92,8 @@ impl FireSim {
         if params.enable_sparks {
             for _ in 0..2 {
                 self.particles.push(Particle {
-                    x: rand::random::<f32>() * constants::WINDOW_WIDTH as f32,
-                    y: constants::WINDOW_HEIGHT as f32 - 15.0,
+                    x: rand::random::<f32>() * 800.0,
+                    y: 590.0,
                     vx: (rand::random::<f32>() - 0.5) * 30.0,
                     vy: -rand::random::<f32>() * 70.0 - 40.0,
                     temp: 120.0,
