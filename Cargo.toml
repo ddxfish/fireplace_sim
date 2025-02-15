@@ -1,0 +1,12 @@
+[package]
+name = "fireplace_sim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit = "0.26"
+pixels = "0.10"
+egui = "0.15"
+egui-winit = "0.15"
+image = "0.23"
+rand = "0.8"
