@@ -1,5 +1,5 @@
 // ui.rs
-use egui::{CtxRef, Slider, Checkbox, Window};
+use egui::{Context, Slider, Checkbox, Window};
 
 #[derive(Clone)]
 pub struct SimulationParams {
@@ -35,7 +35,7 @@ impl UIState {
         }
     }
     
-    pub fn build_ui(&mut self, ctx: &CtxRef) {
+    pub fn build_ui(&mut self, ctx: &Context) {
         Window::new("Fire Controls").show(ctx, |ui| {
             ui.label("Fuel Amount");
             ui.add(Slider::new(&mut self.params.fuel_amount, 0.0..=100.0));

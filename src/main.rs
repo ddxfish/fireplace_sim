@@ -14,10 +14,9 @@ use winit::{
 use pixels::{Pixels, SurfaceTexture};
 use std::time::Instant;
 use egui_winit::State as EguiWinitState;
-use egui::{CtxRef, FontDefinitions};
+use egui::{Context, FontDefinitions};
 
 fn main() {
-    // Create window and event loop.
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Fire Simulation")
@@ -31,18 +30,15 @@ fn main() {
         Pixels::new(constants::WINDOW_WIDTH, constants::WINDOW_HEIGHT, surface_texture).unwrap()
     };
 
-    // Load configuration and assets.
     let config = config::load_config();
     let background = assets::load_background_image(&config.background_path);
     let border = assets::load_border_image(&config.border_path);
 
-    // Initialize simulation and UI.
     let mut simulation = sim::FireSim::new();
     let mut ui_state = ui::UIState::new();
     
-    // Setup egui integration.
     let mut egui_state = EguiWinitState::new(&window);
-    let mut egui_ctx = CtxRef::default();
+    let mut egui_ctx = Context::default();
     egui_ctx.set_fonts(FontDefinitions::default());
     
     let mut last_frame = Instant::now();
@@ -57,22 +53,18 @@ fn main() {
                 let dt = now.duration_since(last_frame).as_secs_f32();
                 last_frame = now;
                 
-                // Update simulation.
                 simulation.update(dt, &ui_state.params);
                 ui_state.thermometer = simulation.average_temperature();
                 
-                // Run egui UI frame.
                 let raw_input = egui_state.take_egui_input(&window);
                 let full_output = egui_ctx.run(raw_input, |ctx| {
                     ui_state.build_ui(ctx);
                 });
                 egui_state.handle_platform_output(&window, &egui_ctx, full_output.platform_output);
                 
-                // Render simulation, background, border.
-                let frame = pixels.get_frame();
+                let frame = pixels.get_frame_mut();
                 rendering::draw_frame(frame, &simulation, &background, &border, &ui_state);
                 
-                // (UI overlay via egui is not composited into the pixel buffer here for brevity.)
                 if pixels.render().is_err() {
                     *control_flow = ControlFlow::Exit;
                 }

@@ -8,7 +8,6 @@ pub struct AppConfig {
 }
 
 pub fn load_config() -> AppConfig {
-    // Attempt to read "config.ini"; return defaults if unavailable.
     if let Ok(contents) = fs::read_to_string("config.ini") {
         let mut background_path = "background.png".to_string();
         let mut border_path = "border.png".to_string();
@@ -21,10 +20,7 @@ pub fn load_config() -> AppConfig {
         }
         AppConfig { background_path, border_path }
     } else {
-        AppConfig {
-            background_path: "background.png".to_string(),
-            border_path: "border.png".to_string(),
-        }
+        AppConfig { background_path: "background.png".to_string(), border_path: "border.png".to_string() }
     }
 }
 
