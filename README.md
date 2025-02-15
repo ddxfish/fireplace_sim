@@ -1,0 +1,1 @@
+This was just a test in Rust to make a fireplace sim. It works but I can't see why anyone would want to use it. 
